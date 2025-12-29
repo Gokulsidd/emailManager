@@ -1,0 +1,12 @@
+{
+    "NEXT_PUBLIC_API_BASEPATH_URL": "https://app.xectec.in/Mail/WatcherAPI/",
+    "NEXT_PUBLIC_API_2_BASEPATH_URL": "https://app.xectec.in/DMS/Client360/",
+
+    "GET_ALL_EMAILS_END_POINT": "Email/All",
+    "SEARCH_EMAIL_USERS_END_POINT": "User/Users?filter=",
+    "GET_USERS_FOLDER_END_POINT": "User/UserFolders?email=",
+
+    "GET_CLIENTS_LIST_END_POINT": "Search/DynamicField/ClientList"
+
+    
+}
