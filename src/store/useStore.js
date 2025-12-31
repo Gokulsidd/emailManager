@@ -142,6 +142,36 @@ export const useStore = create((set, get) => ({
       rules: wizardRules,
     };
 
+    // Console log the final payload
+    console.log('=== Final Wizard Payload ===');
+    console.log('Mode:', wizardMode);
+    console.log('Form Data:', {
+      profileName: wizardFormData.profileName,
+      userName: wizardFormData.userName,
+      mailFolder: wizardFormData.mailFolder,
+      mailAction: wizardFormData.mailAction,
+      saveConversation: wizardFormData.saveConversation,
+      saveAttachmentSeparate: wizardFormData.saveAttachmentSeparate,
+    });
+    console.log('Rules:', wizardRules.map(rule => ({
+      id: rule.id,
+      name: rule.name,
+      filters: {
+        allEmail: rule.allEmail,
+        fromEmail: rule.fromEmail,
+        fromEmailList: rule.fromEmailList,
+        toEmail: rule.toEmail,
+        toEmailList: rule.toEmailList,
+        ccEmail: rule.ccEmail,
+        ccEmailList: rule.ccEmailList,
+        subject: rule.subject,
+        subjectText: rule.subjectText,
+      },
+      templateMapping: rule.templateMapping,
+    })));
+    console.log('Complete Config:', configData);
+    console.log('==========================');
+
     if (wizardMode === 'add') {
       const newConfig = {
         id: Date.now().toString(),
@@ -158,7 +188,7 @@ export const useStore = create((set, get) => ({
       setEmailConfigs(updatedConfigs);
     }
 
-    get().closeWizard();
+    // Don't close wizard immediately - let the success dialog handle it
   },
 
   deleteConfig: (id) => {

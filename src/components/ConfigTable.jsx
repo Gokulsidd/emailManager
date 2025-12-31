@@ -36,11 +36,7 @@ export default function ConfigTable({ configs: initialConfigs }) {
 
   const {
     isWizardOpen,
-    selectedConfig,
-    wizardMode,
-    setIsWizardOpen,
-    setSelectedConfig,
-    setWizardMode,
+    openWizard,
   } = useStore();
 
   const handleSort = (column) => {
@@ -74,9 +70,9 @@ export default function ConfigTable({ configs: initialConfigs }) {
 
   const handleEdit = (id) => {
     const config = configs.find((c) => c.id.toString() === id);
-    setSelectedConfig(config);
-    setWizardMode("edit");
-    setIsWizardOpen(true);
+    if (config) {
+      openWizard("edit", config);
+    }
   };
 
   const handleDelete = (id) => {

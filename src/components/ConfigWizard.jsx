@@ -1,11 +1,28 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, Check, Mail, FileText, Settings, Plus, Trash2, Pencil, FileCode, CheckIcon } from 'lucide-react';
 import ComboBox from './ComboBox';
 import TaggedInput from './TaggedInput';
 import FolderTree from './FolderTree';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import { useStore } from '@/store/useStore';
 import { fetchClientsList } from '@/services/api.services';
 
@@ -52,6 +69,9 @@ export default function ConfigWizard() {
     closeWizard,
     saveWizardConfig,
   } = useStore();
+
+  // Success dialog state
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // Trigger mail folders search when selectedEmailUser changes
   useEffect(() => {
@@ -177,6 +197,7 @@ export default function ConfigWizard() {
   const handleSubmit = () => {
     if (currentStep === 2 && !validateStep2()) return;
     saveWizardConfig();
+    setShowSuccessDialog(true);
   };
 
   const handleAddRule = () => {
@@ -198,7 +219,21 @@ export default function ConfigWizard() {
   };
 
   const handleEditRule = (rule) => {
-    setEditingRule({ ...rule });
+    // Deep copy the rule to ensure all nested properties are copied
+    setEditingRule({
+      id: rule.id,
+      name: rule.name || '',
+      allEmail: rule.allEmail || false,
+      fromEmail: rule.fromEmail || false,
+      fromEmailList: [...(rule.fromEmailList || [])],
+      toEmail: rule.toEmail || false,
+      toEmailList: [...(rule.toEmailList || [])],
+      ccEmail: rule.ccEmail || false,
+      ccEmailList: [...(rule.ccEmailList || [])],
+      subject: rule.subject || false,
+      subjectText: rule.subjectText || '',
+      templateMapping: rule.templateMapping ? { ...rule.templateMapping } : undefined,
+    });
     setIsRuleEditorOpen(true);
   };
 
@@ -212,6 +247,7 @@ export default function ConfigWizard() {
       cc: '',
       bcc: '',
       subject: '',
+      selectedFolder: null,
     });
     setShowFolderTree(false);
     setIsTemplateMappingOpen(true);
@@ -225,7 +261,7 @@ export default function ConfigWizard() {
     if (mappingRule) {
       const updatedRules = wizardRules.map(r =>
         r.id === mappingRule.id
-          ? { ...r, templateMapping: templateMapping }
+          ? { ...r, templateMapping: { ...templateMapping } }
           : r
       );
       setWizardRules(updatedRules);
@@ -239,6 +275,7 @@ export default function ConfigWizard() {
         cc: '',
         bcc: '',
         subject: '',
+        selectedFolder: null,
       });
     }
   };
@@ -255,6 +292,7 @@ export default function ConfigWizard() {
       cc: '',
       bcc: '',
       subject: '',
+      selectedFolder: null,
     });
   };
 
@@ -341,9 +379,15 @@ export default function ConfigWizard() {
     }
   };
 
+  const handleCloseSuccessDialog = () => {
+    setShowSuccessDialog(false);
+    closeWizard();
+  };
+
   if (!isWizardOpen) return null;
 
   return (
+    <>
       <div className="bg-background w-full rounded-xl shadow-lg max-w-lg h-full border-l border-gray-200 overflow-y-auto overflow-x-hidden flex flex-col justify-between transition-transform duration-300">
         {/* Header */}
         <div className="flex items-center justify-between px-5 h-14 border-b shrink-0">
@@ -521,6 +565,205 @@ export default function ConfigWizard() {
                 {wizardErrors.mailFolder && (
                   <p className="text-red-500 text-sm mt-1">Mail Folder is required</p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Template Mapping */}
+          {currentStep === 2 && isTemplateMappingOpen && mappingRule && (
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Template Mapping</h3>
+                <span className="text-sm text-muted-foreground">for {mappingRule.name}</span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="template" className="mb-2 inline-block">
+                    Template <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={templateMapping.template}
+                    onValueChange={(value) => setTemplateMapping({ ...templateMapping, template: value })}
+                  >
+                    <SelectTrigger id="template" className="w-full">
+                      <SelectValue placeholder="Select Template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateOptions.map((template) => (
+                        <SelectItem key={template} value={template}>
+                          {template}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="client" className="mb-2 inline-block">
+                    Client Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={templateMapping.clientName}
+                    onValueChange={(value) => setTemplateMapping({ ...templateMapping, clientName: value })}
+                  >
+                    <SelectTrigger id="client" className="w-full">
+                      <SelectValue placeholder="Select Client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientOptions.map((client) => (
+                        <SelectItem key={client} value={client}>
+                          {client}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="folder" className="mb-2 inline-block">
+                    Folder Path <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="folder"
+                      type="text"
+                      value={templateMapping.selectedFolder?.path || ''}
+                      readOnly
+                      className="flex-1 bg-muted"
+                      placeholder="No folder selected"
+                    />
+                    <Button
+                      onClick={() => setShowFolderTree(!showFolderTree)}
+                      variant="outline"
+                      size="default"
+                    >
+                      {showFolderTree ? 'Hide' : 'Select'} Folder
+                    </Button>
+                  </div>
+                </div>
+
+                {showFolderTree && (
+                  <div className="border border-input rounded-md p-4 max-h-64 overflow-y-auto bg-muted/30">
+                    <FolderTree
+                      data={mockFolderData}
+                      onFolderSelect={handleFolderSelect}
+                    />
+                  </div>
+                )}
+
+                <div className="pt-4 space-y-4 border-t">
+                  <h4 className="text-sm font-medium text-muted-foreground">Email Configuration (Optional)</h4>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="from" className="mb-2 inline-block">From</Label>
+                      <Select
+                        value={templateMapping.from}
+                        onValueChange={(value) => setTemplateMapping({ ...templateMapping, from: value })}
+                      >
+                        <SelectTrigger id="from" className="w-full">
+                          <SelectValue placeholder="Select From Address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fromOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="to" className="mb-2 inline-block">To</Label>
+                      <Select
+                        value={templateMapping.to}
+                        onValueChange={(value) => setTemplateMapping({ ...templateMapping, to: value })}
+                      >
+                        <SelectTrigger id="to" className="w-full">
+                          <SelectValue placeholder="Select To Address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {toOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="cc" className="mb-2 inline-block">CC</Label>
+                      <Select
+                        value={templateMapping.cc}
+                        onValueChange={(value) => setTemplateMapping({ ...templateMapping, cc: value })}
+                      >
+                        <SelectTrigger id="cc" className="w-full">
+                          <SelectValue placeholder="Select CC Address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ccOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="bcc" className="mb-2 inline-block">BCC</Label>
+                      <Select
+                        value={templateMapping.bcc}
+                        onValueChange={(value) => setTemplateMapping({ ...templateMapping, bcc: value })}
+                      >
+                        <SelectTrigger id="bcc" className="w-full">
+                          <SelectValue placeholder="Select BCC Address" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bccOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="subject" className="mb-2 inline-block">Subject</Label>
+                      <Select
+                        value={templateMapping.subject}
+                        onValueChange={(value) => setTemplateMapping({ ...templateMapping, subject: value })}
+                      >
+                        <SelectTrigger id="subject" className="w-full">
+                          <SelectValue placeholder="Select Subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjectOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button onClick={handleCancelTemplateMapping} variant="outline">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveTemplateMapping}
+                  disabled={!templateMapping.template || !templateMapping.clientName || !templateMapping.selectedFolder}
+                >
+                  Save Mapping
+                </Button>
               </div>
             </div>
           )}
@@ -860,5 +1103,26 @@ export default function ConfigWizard() {
           )}
         </div>
       </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <Check className="w-5 h-5" />
+              Success
+            </DialogTitle>
+            <DialogDescription>
+              Email rule configuration has been {wizardMode === 'add' ? 'created' : 'updated'} successfully!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleCloseSuccessDialog}>
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
