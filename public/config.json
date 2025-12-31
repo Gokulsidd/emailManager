@@ -5,6 +5,8 @@
     "GET_ALL_EMAILS_END_POINT": "Email/All",
     "SEARCH_EMAIL_USERS_END_POINT": "User/Users?filter=",
     "GET_USERS_FOLDER_END_POINT": "User/UserFolders?email=",
+    "SAVE_EMAIL_CONFIG_END_POINT": "Email/Email/Save",
+    "DETELE_EMAIL_CONFIG_END_POINT": "Email/DeleteSetup?id=",
 
     "GET_CLIENTS_LIST_END_POINT": "Search/DynamicField/ClientList"
 

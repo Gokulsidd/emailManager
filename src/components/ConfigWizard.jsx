@@ -72,6 +72,8 @@ export default function ConfigWizard() {
 
   // Success dialog state
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Trigger mail folders search when selectedEmailUser changes
   useEffect(() => {
@@ -194,10 +196,21 @@ export default function ConfigWizard() {
     setCurrentStep(stepNumber);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (currentStep === 2 && !validateStep2()) return;
-    saveWizardConfig();
-    setShowSuccessDialog(true);
+    
+    setIsSaving(true);
+    setSaveError(null);
+    
+    const result = await saveWizardConfig();
+    
+    setIsSaving(false);
+    
+    if (result.success) {
+      setShowSuccessDialog(true);
+    } else {
+      setSaveError(result.message || 'Failed to save configuration');
+    }
   };
 
   const handleAddRule = () => {
@@ -427,10 +440,11 @@ export default function ConfigWizard() {
             <Button
               onClick={handleSubmit}
               size="sm"
+              disabled={isSaving}
               className={`gap-1.5 ${wizardMode === 'add' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}`}
             >
               <CheckIcon className="w-4 h-4" />
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           )}
         </div>
@@ -1039,6 +1053,13 @@ export default function ConfigWizard() {
           {currentStep === 4 && (
             <div className="p-6 space-y-6">
               <h3 className="text-lg font-medium">Summary</h3>
+
+              {saveError && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <h4 className="text-sm font-medium text-red-800 mb-1">Error</h4>
+                  <p className="text-sm text-red-700">{saveError}</p>
+                </div>
+              )}
 
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

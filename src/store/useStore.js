@@ -1,4 +1,4 @@
-import { fetchEmailUsers, fetchMailFolders } from '@/services/api.services';
+import { fetchEmailUsers, fetchMailFolders, saveEmailConfiguration, getAllEmails, convertEmailToConfig, deleteEmailConfiguration } from '@/services/api.services';
 import { create } from 'zustand';
 
 export const useStore = create((set, get) => ({
@@ -134,66 +134,93 @@ export const useStore = create((set, get) => ({
     });
   },
 
-  saveWizardConfig: () => {
-    const { wizardMode, selectedConfig, wizardFormData, wizardRules, emailConfigs, setEmailConfigs } = get();
+  saveWizardConfig: async () => {
+    const { wizardMode, selectedConfig, wizardFormData, wizardRules, setEmailConfigs } = get();
     
-    const configData = {
-      ...wizardFormData,
-      rules: wizardRules,
-    };
-
-    // Console log the final payload
-    console.log('=== Final Wizard Payload ===');
+    // Console log the wizard data before API call
+    console.log('=== Wizard Data Before API Call ===');
     console.log('Mode:', wizardMode);
-    console.log('Form Data:', {
-      profileName: wizardFormData.profileName,
-      userName: wizardFormData.userName,
-      mailFolder: wizardFormData.mailFolder,
-      mailAction: wizardFormData.mailAction,
-      saveConversation: wizardFormData.saveConversation,
-      saveAttachmentSeparate: wizardFormData.saveAttachmentSeparate,
-    });
-    console.log('Rules:', wizardRules.map(rule => ({
-      id: rule.id,
-      name: rule.name,
-      filters: {
-        allEmail: rule.allEmail,
-        fromEmail: rule.fromEmail,
-        fromEmailList: rule.fromEmailList,
-        toEmail: rule.toEmail,
-        toEmailList: rule.toEmailList,
-        ccEmail: rule.ccEmail,
-        ccEmailList: rule.ccEmailList,
-        subject: rule.subject,
-        subjectText: rule.subjectText,
-      },
-      templateMapping: rule.templateMapping,
-    })));
-    console.log('Complete Config:', configData);
-    console.log('==========================');
+    console.log('Form Data:', wizardFormData);
+    console.log('Rules:', wizardRules);
+    console.log('==================================');
 
-    if (wizardMode === 'add') {
-      const newConfig = {
-        id: Date.now().toString(),
-        ...configData,
-        emailsPerSession: 100,
-      };
-      setEmailConfigs([...(emailConfigs || []), newConfig]);
-    } else if (selectedConfig) {
-      const updatedConfigs = (emailConfigs || []).map((c) =>
-        c.id.toString() === selectedConfig.id.toString()
-          ? { ...c, ...configData }
-          : c
+    try {
+      // Call API to save configuration
+      const result = await saveEmailConfiguration(
+        wizardFormData,
+        wizardRules,
+        wizardMode,
+        selectedConfig
       );
-      setEmailConfigs(updatedConfigs);
-    }
 
-    // Don't close wizard immediately - let the success dialog handle it
+      if (result.success) {
+        console.log('✅ Email configuration saved successfully');
+        
+        // Fetch latest email configurations from API
+        console.log('🔄 Fetching latest email configurations...');
+        const emails = await getAllEmails();
+        
+        if (emails && emails.length > 0) {
+          // Convert API format to UI format
+          const convertedConfigs = emails.map(email => convertEmailToConfig(email));
+          setEmailConfigs(convertedConfigs);
+          console.log('✅ Email configurations refreshed from API');
+        }
+
+        return { success: true, message: result.message };
+      } else {
+        console.error('❌ Failed to save email configuration:', result.message);
+        return { success: false, message: result.message };
+      }
+    } catch (error) {
+      console.error('❌ Error saving email configuration:', error);
+      return { success: false, message: 'An unexpected error occurred' };
+    }
   },
 
-  deleteConfig: (id) => {
-    const { emailConfigs, setEmailConfigs } = get();
-    setEmailConfigs((emailConfigs || []).filter((c) => c.id.toString() !== id));
+  deleteConfig: async (id) => {
+    const { setEmailConfigs } = get();
+
+    try{
+      const response = await deleteEmailConfiguration(id);
+      console.log(response);
+
+      //need to add this with condition
+      const emails = await getAllEmails();
+        
+        if (emails && emails.length > 0) {
+          // Convert API format to UI format
+          const convertedConfigs = emails.map(email => convertEmailToConfig(email));
+          setEmailConfigs(convertedConfigs);
+          console.log('✅ Email configurations refreshed from API');
+        }
+    }catch(error){
+      console.log(error);
+    }
+  },
+
+  // Load all email configurations from API
+  loadEmailConfigs: async () => {
+    const { setEmailConfigs } = get();
+    
+    try {
+      console.log('📥 Loading email configurations from API...');
+      const emails = await getAllEmails();
+      
+      if (emails && emails.length > 0) {
+        const convertedConfigs = emails.map(email => convertEmailToConfig(email));
+        setEmailConfigs(convertedConfigs);
+        console.log('✅ Loaded', convertedConfigs.length, 'email configurations');
+        return convertedConfigs;
+      } else {
+        setEmailConfigs([]);
+        console.log('ℹ️ No email configurations found');
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ Failed to load email configurations:', error);
+      return [];
+    }
   },
 
   // Existing async actions

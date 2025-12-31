@@ -26,8 +26,7 @@ import {
 import { Pencil, Trash2 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 
-export default function ConfigTable({ configs: initialConfigs }) {
-  const [configs, setConfigs] = useState(initialConfigs);
+export default function ConfigTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
@@ -37,7 +36,11 @@ export default function ConfigTable({ configs: initialConfigs }) {
   const {
     isWizardOpen,
     openWizard,
+    emailConfigs,
+    deleteConfig,
   } = useStore();
+
+  const configs = emailConfigs || [];
 
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -85,60 +88,12 @@ export default function ConfigTable({ configs: initialConfigs }) {
 
   const confirmDelete = () => {
     if (configToDelete) {
-      setConfigs(
-        configs.filter((c) => c.id.toString() !== configToDelete.id.toString())
-      );
+      deleteConfig(configToDelete.id.toString());
       setDeleteDialogOpen(false);
       setConfigToDelete(null);
     }
   };
 
-  const handleAddNew = () => {
-    setSelectedConfig(undefined);
-    setWizardMode("add");
-    setIsWizardOpen(true);
-  };
-
-  const handleSaveConfig = (configData) => {
-    if (wizardMode === "add") {
-      const newConfig = {
-        id: Date.now().toString(),
-        profileName: configData.profileName,
-        userName: configData.userName,
-        mailFolder: configData.mailFolder,
-        emailsPerSession: 100,
-        rules: configData.rules,
-        mailAction: configData.mailAction,
-        saveConversation: configData.saveConversation,
-        saveAttachmentSeparate: configData.saveAttachmentSeparate,
-      };
-      setConfigs([...configs, newConfig]);
-    } else {
-      if (selectedConfig) {
-        const updatedConfigs = configs.map((c) =>
-          c.id.toString() === selectedConfig.id.toString()
-            ? {
-                ...c,
-                profileName: configData.profileName,
-                userName: configData.userName,
-                mailFolder: configData.mailFolder,
-                rules: configData.rules,
-                mailAction: configData.mailAction,
-                saveConversation: configData.saveConversation,
-                saveAttachmentSeparate: configData.saveAttachmentSeparate,
-              }
-            : c
-        );
-        setConfigs(updatedConfigs);
-      }
-    }
-    setIsWizardOpen(false);
-  };
-
-  const handleCloseWizard = () => {
-    setIsWizardOpen(false);
-    setSelectedConfig(undefined);
-  };
 
   return (
     <>
@@ -161,10 +116,6 @@ export default function ConfigTable({ configs: initialConfigs }) {
                   className="pl-9 w-64 h-9 bg-background"
                 />
               </div>
-              {/* <Button onClick={handleAddNew} size="sm" className="gap-2">
-                <Plus className="w-4 h-4" />
-                New Rule
-              </Button> */}
             </div>
           </div>
 
@@ -270,19 +221,6 @@ export default function ConfigTable({ configs: initialConfigs }) {
           </div>
         </div>
 
-        {/* {isWizardOpen && (
-          <div className="w-1/3 h-full py-2 pl-0 pr-2">
-            <div className="w-full h-full overflow-hidden border-l shadow-md rounded-xl">
-              <ConfigWizard
-                isOpen={isWizardOpen}
-                onClose={handleCloseWizard}
-                config={selectedConfig}
-                mode={wizardMode}
-                onSave={handleSaveConfig}
-              />
-            </div>
-          </div>
-        )} */}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
