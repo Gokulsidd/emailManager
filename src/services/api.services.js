@@ -308,6 +308,42 @@ export const saveEmailConfiguration = async (wizardFormData, wizardRules, wizard
   }
 };
 
+// update email configuration
+export const UpdateEmailConfiguration = async (wizardFormData, wizardRules, wizardMode, selectedConfig) => {
+  try {
+    const { configs } = useStore.getState();
+    const api = getApiInstance();
+    const endPoint = configs?.SAVE_EMAIL_CONFIG_END_POINT || "Email/Email/Save";
+
+    const payload = transformWizardDataToApiPayload(wizardFormData, wizardRules, wizardMode, selectedConfig);
+    
+    console.log('=== API Request Payload ===');
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('==========================');
+
+    const response = await api.post(endPoint, payload, {
+      withCredentials: false,
+    });
+
+    console.log('=== API Response ===');
+    console.log(response.data);
+    console.log('===================');
+
+    return {
+      success: true,
+      data: response.data,
+      message: 'Email configuration saved successfully'
+    };
+  } catch (error) {
+    console.error("Failed to save email configuration:", error);
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+      message: error.response?.data?.message || 'Failed to save email configuration'
+    };
+  }
+};
+
 //delete email config
 export const deleteEmailConfiguration = async (id) => {
   try {

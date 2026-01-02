@@ -68,6 +68,7 @@ export default function ConfigWizard() {
     setMailFolders,
     closeWizard,
     saveWizardConfig,
+    updateWizardConfig
   } = useStore();
 
   // Success dialog state
@@ -202,7 +203,8 @@ export default function ConfigWizard() {
     setIsSaving(true);
     setSaveError(null);
     
-    const result = await saveWizardConfig();
+    const result = wizardMode === 'add' ? await saveWizardConfig() : await updateWizardConfig();
+   
     
     setIsSaving(false);
     
@@ -444,7 +446,7 @@ export default function ConfigWizard() {
               className={`gap-1.5 ${wizardMode === 'add' ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}`}
             >
               <CheckIcon className="w-4 h-4" />
-              {isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? 'Saving...' : wizardMode === 'add' ? 'Save' : 'Update'}
             </Button>
           )}
         </div>

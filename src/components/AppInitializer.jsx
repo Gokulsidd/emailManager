@@ -13,7 +13,7 @@ const AppInitializer = () => {
     const initializeApp = async () => {
       try {
         // Fetch configuration
-        const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH_URL ?? "";
         const res = await fetch(`${basePath}/config.json`);
         if (!res.ok) throw new Error("Failed to load config.json");
         

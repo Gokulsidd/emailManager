@@ -178,6 +178,50 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  updateWizardConfig: async () => {
+    const { wizardMode, selectedConfig, wizardFormData, wizardRules, setEmailConfigs } = get();
+    
+    // Console log the wizard data before API call
+    console.log('=== Wizard Data Before API Call ===');
+    console.log('Mode:', wizardMode);
+    console.log('Form Data:', wizardFormData);
+    console.log('Rules:', wizardRules);
+    console.log('==================================');
+
+    try {
+      // Call API to save configuration
+      const result = await saveEmailConfiguration(
+        wizardFormData,
+        wizardRules,
+        wizardMode,
+        selectedConfig
+      );
+
+      if (result.success) {
+        console.log('✅ Email configuration Updated successfully');
+        
+        // Fetch latest email configurations from API
+        console.log('🔄 Fetching latest email configurations...');
+        const emails = await getAllEmails();
+        
+        if (emails && emails.length > 0) {
+          // Convert API format to UI format
+          const convertedConfigs = emails.map(email => convertEmailToConfig(email));
+          setEmailConfigs(convertedConfigs);
+          console.log('✅ Email configurations refreshed from API');
+        }
+
+        return { success: true, message: result.message };
+      } else {
+        console.error('❌ Failed to save email configuration:', result.message);
+        return { success: false, message: result.message };
+      }
+    } catch (error) {
+      console.error('❌ Error saving email configuration:', error);
+      return { success: false, message: 'An unexpected error occurred' };
+    }
+  },
+
   deleteConfig: async (id) => {
     const { setEmailConfigs } = get();
 
